@@ -21,23 +21,26 @@
 #include "message_buffer.h"
 #include "MQTTConfig.h"
 #include "MQTTInterface.h"
+#include "MQTTAgentObserver.h"
+#include "PicoLed.hpp"
 
 #define LED_QUEUE_LEN 	5
 #define MQTT_TOPIC_LED_STATE "LED/state"
 #define LED_BUFFER_LEN 	256
 #define LED_JSON_LEN 	80
 #define LED_JSON_POOL 	5
+#define GP_WS2812B				9
+#define LED_BAR_LEN 			11
 
 
-class LEDAgent : public Agent, public SwitchObserver {
+class LEDAgent : public Agent, public SwitchObserver, public MQTTAgentObserver {
 public:
 	/***
 	 * Constructor
-	 * @param ledGP - GPIO Pad of LED to control
 	 * @param spstGP - GPIO Pad of SPST non latched switch
 	 * @param interface - MQTT Interface that state will be notified to
 	 */
-	LEDAgent(uint8_t ledGP, uint8_t spstGP, MQTTInterface *interface);
+	LEDAgent(uint8_t spstGP, MQTTInterface *interface);
 
 	/***
 	 * Destructor
@@ -73,6 +76,14 @@ public:
 	 * @param gp - GPIO number of the switch
 	 */
 	virtual void handleLongPress(uint8_t gp);
+
+	virtual void MQTTOffline();
+
+	virtual void MQTTOnline();
+
+	virtual void MQTTSend();
+
+	virtual void MQTTRecv();
 
 protected:
 	/***
@@ -115,8 +126,7 @@ private:
 	//State of the LED
 	bool xState = false;
 
-	//LED and switch pads
-	uint8_t xLedGP;
+	//Switch pads
 	uint8_t xSpstGP;
 
 	// Switch manage to manage the SPST switch
@@ -131,6 +141,16 @@ private:
 
 	// Json decoding buffer
 	json_t pJsonPool[ LED_JSON_POOL ];
+
+	PicoLed::PicoLedController xNeopixels = PicoLed::addLeds<PicoLed::WS2812B>(
+						pio1, 0,
+						GP_WS2812B,
+						LED_BAR_LEN,
+						PicoLed::FORMAT_GRB);
+
+
+	uint8_t xTxPixel = 0;
+	uint8_t xRxPixel = 0;
 
 };
 

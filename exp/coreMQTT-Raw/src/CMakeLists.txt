@@ -28,6 +28,7 @@ target_link_libraries(${NAME}
      tiny_json
      hardware_adc
      hardware_watchdog
+     PicoLed
 	)
 	
 target_include_directories(${NAME} PRIVATE

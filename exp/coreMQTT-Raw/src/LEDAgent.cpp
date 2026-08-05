@@ -17,19 +17,12 @@ enum LEDAction {LEDOff, LEDOn, LEDToggle};
 
 /***
  * Constructor
- * @param ledGP - GPIO Pad of LED to control
  * @param spstGP - GPIO Pad of SPST non latched switch
  * @param interface - MQTT Interface that state will be notified to
  */
-LEDAgent::LEDAgent(uint8_t ledGP, uint8_t spstGP, MQTTInterface *interface) {
-	xLedGP  = ledGP;
+LEDAgent::LEDAgent(uint8_t spstGP, MQTTInterface *interface) {
 	xSpstGP = spstGP;
 	pInterface = interface;
-
-	//Initialise the LED and set it's initial state
-	gpio_init(xLedGP);
-	gpio_set_dir(xLedGP, GPIO_OUT);
-	gpio_put(xLedGP, 0);
 
 	//Construct switch observer and listen
 	pSwitchMgr = new SwitchMgr(xSpstGP);
@@ -141,6 +134,13 @@ void LEDAgent::run(){
 		return;
 	}
 
+	xNeopixels.setBrightness( 30);
+	xNeopixels.fill(PicoLed::RGB(0xff, 0x00, 0x00));
+	xNeopixels.show();
+	vTaskDelay(3000);
+	xNeopixels.clear();
+	xNeopixels.show();
+
 	while (true) { // Loop forever
 		readLen = xMessageBufferReceive(
 						 xBuffer,
@@ -172,11 +172,22 @@ void LEDAgent::run(){
 			taskYIELD();
 		}
 
+
+
 		uint32_t now = to_ms_since_boot (get_absolute_time());
 		if (now > next){
 			sendTelem();
 			next = now + 5000;
 		}
+
+		xNeopixels.show();
+		vTaskDelay(250);
+
+		//Decay Tx and Rx Pixels
+		xTxPixel = xTxPixel >> 1;
+		xNeopixels.setPixelColor(1, PicoLed::RGB(0x00, 0x00, xTxPixel));
+		xRxPixel = xRxPixel >> 1;
+		xNeopixels.setPixelColor(2, PicoLed::RGB(0x00, 0x00, xRxPixel));
 	}
 }
 
@@ -187,13 +198,14 @@ void LEDAgent::run(){
  */
 void LEDAgent::execLed(bool state){
 	xState = state;
-	gpio_put(xLedGP, xState);
 
 	char payload[16];
 	if (xState){
 		sprintf(payload, "{\"led\":True}");
+		xNeopixels.setPixelColor(LED_BAR_LEN-1, PicoLed::RGB(0xff, 0xff, 0xff));
 	} else {
 		sprintf(payload, "{\"led\":False}");
+		xNeopixels.setPixelColor(LED_BAR_LEN-1, PicoLed::RGB(0x00, 0x00, 0x00));
 	}
 	if (pInterface != NULL){
 		pInterface->pubToTopic(
@@ -290,4 +302,26 @@ void LEDAgent::addJSON(const void  *jsonStr, size_t len){
 
 		//printf("AddJSON(%u)=%u, %s\n", len, res, jsonStr);
 	}
+}
+
+
+
+void LEDAgent::MQTTOffline(){
+	printf("MQTT OFFLINE\n");
+	xNeopixels.setPixelColor(0, PicoLed::RGB(0xff, 0x00, 0x00));
+}
+
+void LEDAgent::MQTTOnline(){
+	printf("MQTT ONLINE\n");
+	xNeopixels.setPixelColor(0, PicoLed::RGB(0x00, 0xff, 0x00));
+}
+
+void LEDAgent::MQTTSend(){
+	xTxPixel = 0xff;
+	xNeopixels.setPixelColor(1, PicoLed::RGB(0x00, 0x00, xTxPixel));
+}
+
+void LEDAgent::MQTTRecv(){
+	xRxPixel = 0xff;
+	xNeopixels.setPixelColor(2, PicoLed::RGB(0x00, 0x00, xRxPixel));
 }

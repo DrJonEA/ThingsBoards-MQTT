@@ -49,8 +49,7 @@
 #error "MQTT_PORT not defined"
 #endif
 
-// LED PAD defintions
-#define LED_PAD  	    0
+// Switch PAD defintions
 #define SWITCH_PAD	 	1
 
 
@@ -152,9 +151,7 @@ void main_task(void *params){
 	char mqttPwd[] = MQTT_PASSWD;
 
 	MQTTAgent mqttAgent;
-	MQTTAgentObserver mqttObs;
 
-	mqttAgent.setObserver(&mqttObs);
 	mqttAgent.credentials(mqttUser, mqttPwd, mqttClient);
 
 	printf("Connecting to: %s(%d)\n", mqttTarget, mqttPort);
@@ -165,8 +162,9 @@ void main_task(void *params){
 	mqttAgent.start(TASK_PRIORITY);
 
 
-	LEDAgent ledAgent(LED_PAD, SWITCH_PAD, &mqttAgent);
+	LEDAgent ledAgent(SWITCH_PAD, &mqttAgent);
 	ledAgent.start("LEDAgent", TASK_PRIORITY);
+	mqttAgent.setObserver(&ledAgent);
 
 	MQTTRouterLED router(&ledAgent);
 	mqttAgent.setRouter(&router);

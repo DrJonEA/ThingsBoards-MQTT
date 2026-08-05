@@ -351,7 +351,8 @@ void MQTTAgent::connectCmdHandler( MQTTAgentCommandContext_t * pCmdCallbackConte
             MQTTAgentReturnInfo_t * pReturnInfo ){
 	if (pReturnInfo->returnCode == MQTTSuccess){
 		LogInfo(("Connected\n"));
-		pubToTopic(pOnlineTopic, ONLINEPAYLOAD, strlen(ONLINEPAYLOAD), 1, false);
+		//pubToTopic(pOnlineTopic, ONLINEPAYLOAD, strlen(ONLINEPAYLOAD), 1, false);
+
 	 } else {
 		 LogInfo(("Connection Failed\n"));
 	}

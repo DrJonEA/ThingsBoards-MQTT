@@ -16,3 +16,6 @@
 [submodule "lib/json-maker"]
 	path = lib/json-maker
 	url = https://github.com/rafagafe/json-maker
+[submodule "lib/PicoLED"]
+	path = lib/PicoLED
+	url = https://github.com/ForsakenNGS/PicoLED
