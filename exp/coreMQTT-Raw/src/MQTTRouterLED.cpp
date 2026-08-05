@@ -27,6 +27,7 @@ MQTTRouterLED::~MQTTRouterLED() {
  */
 void MQTTRouterLED::subscribe(MQTTInterface *interface){
 	interface->subToTopic("v1/devices/me/attributes", 1);
+	interface->subToTopic("v1/devices/me/rpc/request/+",1);
 }
 
 /***
@@ -43,8 +44,16 @@ void MQTTRouterLED::route(const char *topic,
 		size_t payloadLen,
 		MQTTInterface *interface){
 
-	if (pAgent != NULL){
-		pAgent->addJSON(payload, payloadLen);
+	//printf("Route topic %s\n", topic);
+	if(strstr(topic, "v1/devices/me/rpc/request/") != NULL) {
+		//printf("Handling RPC\n");
+		if (pAgent != NULL){
+			pAgent->addJSON(payload, payloadLen);
+		}
+	} else if(strstr(topic, "v1/devices/me/attributes") != NULL) {
+		if (pAgent != NULL){
+			pAgent->addJSON(payload, payloadLen);
+		}
 	}
 
 }

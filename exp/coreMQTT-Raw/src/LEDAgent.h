@@ -25,7 +25,7 @@
 #define LED_QUEUE_LEN 	5
 #define MQTT_TOPIC_LED_STATE "LED/state"
 #define LED_BUFFER_LEN 	256
-#define LED_JSON_LEN 	20
+#define LED_JSON_LEN 	80
 #define LED_JSON_POOL 	5
 
 

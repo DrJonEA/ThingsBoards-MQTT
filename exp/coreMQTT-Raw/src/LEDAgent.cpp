@@ -10,6 +10,7 @@
 #include "LEDAgent.h"
 #include "MQTTTopicHelper.h"
 #include "hardware/adc.h"
+#include "hardware/watchdog.h"
 
 //Local enumerator of the actions to be queued
 enum LEDAction {LEDOff, LEDOn, LEDToggle};
@@ -212,8 +213,7 @@ void LEDAgent::sendTelem(){
 	float adc = (float)adc_read() * conversionFactor;
 	float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
 
-	sprintf(payload, "{\"uptime\":%d, \"temp\": %.2f}", now, tempC);
-
+	sprintf(payload, "{\"uptime\":%d, \"temperature\": %.2f, \"enabled\": True}", now, tempC);
 
 	if (pInterface != NULL){
 		pInterface->pubToTopic(
@@ -242,19 +242,33 @@ void LEDAgent::sendTelem(){
 * @param str - JSON Strging
 */
 void LEDAgent::parseJSON(char *str){
+	//printf("JSON is %s\n", str);
 	 json_t const* json = json_create( str, pJsonPool, LED_JSON_POOL);
 	 if ( !json ) {
 		 LogError(("Error json create."));
 		 return ;
 	 }
+
+	 json_t const* method = json_getProperty( json, "method" );
+	 if ( method ) {
+		 if (strcmp("reboot", json_getValue(method)) == 0){
+			 printf("REBOOT.......\n");
+			 //Use watchdog timer to trigger reboot
+			 watchdog_enable(100, 1);
+		 }
+	 }
+
 	 json_t const* on = json_getProperty( json, "led" );
 	 if ( !on || JSON_BOOLEAN != json_getType( on ) ) {
-		 LogError(("Error, the on property is not found."));
+		 LogWarn(("Warning, the led property is not found."));
 		 return ;
 	 }
-	 bool b = (int)json_getBoolean( on );
+	 if (on){
+		 bool b = (int)json_getBoolean( on );
+		 setOn(b);
+	 }
 
-	 setOn(b);
+
 }
 
 
@@ -273,5 +287,7 @@ void LEDAgent::addJSON(const void  *jsonStr, size_t len){
 		if (res != len){
 			LogError(("Failed to write"));
 		}
+
+		//printf("AddJSON(%u)=%u, %s\n", len, res, jsonStr);
 	}
 }

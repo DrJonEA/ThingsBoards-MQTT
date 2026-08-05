@@ -27,6 +27,7 @@ target_link_libraries(${NAME}
      coreMQTTAgent
      tiny_json
      hardware_adc
+     hardware_watchdog
 	)
 	
 target_include_directories(${NAME} PRIVATE
